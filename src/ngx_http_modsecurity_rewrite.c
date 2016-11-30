@@ -20,19 +20,21 @@
 
 #include "ngx_http_modsecurity_common.h"
 
+/* NGX_HTTP_REWRITE_PHASE阶段，安全模块儿处理URL和HTTP头部 */
 ngx_int_t
 ngx_http_modsecurity_rewrite_handler(ngx_http_request_t *r)
 {
     ngx_http_modsecurity_ctx_t *ctx = NULL;
     ngx_http_modsecurity_loc_conf_t *cf;
 
+    /* 是否开启了此模块儿，未开启，直接略过 */
     cf = ngx_http_get_module_loc_conf(r, ngx_http_modsecurity_module);
     if (cf == NULL || cf->enable != 1) {
         dd("ModSecurity not enabled... returning");
         return NGX_DECLINED;
     }
 
-    /*
+    /* 难道原来只处理GET/HEAD/POST报文
     if (r->method != NGX_HTTP_GET &&
         r->method != NGX_HTTP_POST && r->method != NGX_HTTP_HEAD) {
         dd("ModSecurity is not ready to deal with anything different from " \
@@ -41,12 +43,10 @@ ngx_http_modsecurity_rewrite_handler(ngx_http_request_t *r)
     }
     */
 
+    /* 获取对应此请求的安全模块儿执行环境，第一次处理则分配此结构 */
     dd("catching a new _rewrite_ phase handler");
-
     ctx = ngx_http_get_module_ctx(r, ngx_http_modsecurity_module);
-
     dd("recovering ctx: %p", ctx);
-
     if (ctx == NULL)
     {
         int ret = 0;
@@ -58,10 +58,8 @@ ngx_http_modsecurity_rewrite_handler(ngx_http_request_t *r)
          */
         ngx_str_t addr_text = connection->addr_text;
 
-        ctx = ngx_http_modsecurity_create_ctx(r);
-
+        ctx = ngx_http_modsecurity_create_ctx(r);   /* 创建模块儿执行环境 */
         dd("ctx was NULL, creating new context: %p", ctx);
-
         if (ctx == NULL) {
             dd("ctx still null; Nothing we can do, returning an error.");
             return NGX_HTTP_INTERNAL_SERVER_ERROR;
@@ -82,7 +80,7 @@ ngx_http_modsecurity_rewrite_handler(ngx_http_request_t *r)
             return NGX_HTTP_INTERNAL_SERVER_ERROR;
         }
         const char *server_addr = inet_ntoa(((struct sockaddr_in *) connection->sockaddr)->sin_addr);
-        ngx_http_modsecurity_pcre_malloc_init();
+        ngx_http_modsecurity_pcre_malloc_init();    /* 初始化事务，五元组流 */
         ret = msc_process_connection(ctx->modsec_transaction,
             client_addr, client_port,
             server_addr, server_port);
@@ -101,7 +99,7 @@ ngx_http_modsecurity_rewrite_handler(ngx_http_request_t *r)
          */
         dd("Processing intervention with the connection information filled in");
         ret = ngx_http_modsecurity_process_intervention(ctx->modsec_transaction, r);
-        if (ret > 0) {
+        if (ret > 0) {                              /* 返回值处理 */
             return ret;
         }
 
@@ -129,13 +127,13 @@ ngx_http_modsecurity_rewrite_handler(ngx_http_request_t *r)
         if (n_uri == (char*)-1 || n_method == (char*)-1) {
             return NGX_HTTP_INTERNAL_SERVER_ERROR;
         }
-        ngx_http_modsecurity_pcre_malloc_init();
+        ngx_http_modsecurity_pcre_malloc_init();    /* 处理URL */
         msc_process_uri(ctx->modsec_transaction, n_uri, n_method, http_version);
         ngx_http_modsecurity_pcre_malloc_done();
 
         dd("Processing intervention with the transaction information filled in (uri, method and version)");
         ret = ngx_http_modsecurity_process_intervention(ctx->modsec_transaction, r);
-        if (ret > 0) {
+        if (ret > 0) {                              /* 返回值处理 */
             return ret;
         }
 
@@ -146,7 +144,7 @@ ngx_http_modsecurity_rewrite_handler(ngx_http_request_t *r)
         ngx_list_part_t *part = &r->headers_in.headers.part;
         ngx_table_elt_t *data = part->elts;
         ngx_uint_t i = 0;
-        for (i = 0 ; /* void */ ; i++) {
+        for (i = 0 ; /* void */ ; i++) {            /* 向ModSecurity传递HTTP头 */
             if (i >= part->nelts) {
                 if (part->next == NULL) {
                     break;
@@ -164,7 +162,6 @@ ngx_http_modsecurity_rewrite_handler(ngx_http_request_t *r)
              * it to ModSecurity, it will handle with those later.
              *
              */
-
             dd("Adding request header: %.*s with value %.*s", (int)data[i].key.len, data[i].key.data, (int) data[i].value.len, data[i].value.data);
             msc_add_n_request_header(ctx->modsec_transaction,
                 (const unsigned char *) data[i].key.data,
@@ -178,16 +175,16 @@ ngx_http_modsecurity_rewrite_handler(ngx_http_request_t *r)
          * to process this information.
          */
 
-        ngx_http_modsecurity_pcre_malloc_init();
+        ngx_http_modsecurity_pcre_malloc_init();    /* 处理请求头 */
         msc_process_request_headers(ctx->modsec_transaction);
         ngx_http_modsecurity_pcre_malloc_done();
         dd("Processing intervention with the request headers information filled in");
         ret = ngx_http_modsecurity_process_intervention(ctx->modsec_transaction, r);
-        if (ret > 0) {
+        if (ret > 0) {                              /* 返回值处理 */
             return ret;
         }
     }
 
-
+    /* 默认返回值，执行本阶段下一个处理句柄 */
     return NGX_DECLINED;
 }

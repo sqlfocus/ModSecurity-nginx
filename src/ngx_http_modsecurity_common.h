@@ -26,16 +26,17 @@
 #include <modsecurity/transaction.h>
 #include <modsecurity/rules.h>
 
+/* 传入到modsecurity模块儿的HTTP头 */
 typedef struct {
     ngx_str_t name;
     ngx_str_t value;
 } ngx_http_modsecurity_header_t;
 
-
+/* 对应每请求，安全模块儿的执行环境 */
 typedef struct {
-    ngx_http_request_t *r;
-    Transaction *modsec_transaction;
-    ModSecurityIntervention *delayed_intervention;
+    ngx_http_request_t *r;             /* 对应的HTTP请求 */
+    Transaction *modsec_transaction;   /* 对应的事务，五元组流 */
+    ModSecurityIntervention *delayed_intervention;  /* */
 
 #ifdef MODSECURITY_SANITY_CHECKS
     /*
@@ -46,31 +47,31 @@ typedef struct {
      * over other modules, thus, we may partially inspect the headers.
      *
      */
-    ngx_array_t *sanity_headers_out;
+    ngx_array_t *sanity_headers_out;   /**/
 #endif
 
-    unsigned waiting_more_body:1;
-    unsigned body_requested:1;
-    unsigned processed:1;
+    unsigned waiting_more_body:1;      /**/
+    unsigned body_requested:1;         /**/
+    unsigned processed:1;              /**/
 } ngx_http_modsecurity_ctx_t;
 
-
+/* 安全模块儿某location的配置 */
 typedef struct {
-    ngx_str_t rules;
-    ngx_str_t rules_file;
-    ngx_str_t rules_remote_server;
-    ngx_str_t rules_remote_key;
+    ngx_str_t rules;                   /**/
+    ngx_str_t rules_file;              /**/
+    ngx_str_t rules_remote_server;     /**/
+    ngx_str_t rules_remote_key;        /**/
 
-    ngx_flag_t enable;
-    ngx_flag_t sanity_checks_enabled;
-    ngx_int_t id;
+    ngx_flag_t enable;                 /* 1/0, 对应配置指令modsecurity on/off */
+    ngx_flag_t sanity_checks_enabled;  /**/
+    ngx_int_t id;                      /**/
 
-    Rules *rules_set;
+    Rules *rules_set;                  /**/
 } ngx_http_modsecurity_loc_conf_t;
 
-
+/* 本模块儿的全局信息结构 */
 typedef struct {
-    ModSecurity *modsec;
+    ModSecurity *modsec;               /* 安全检测模块儿实例 */
 
 } ngx_http_modsecurity_main_conf_t;
 

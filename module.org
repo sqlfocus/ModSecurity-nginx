@@ -85,8 +85,21 @@
                   -ngx_http_run_posted_requests()
   #+END_EXAMPLE
 
-* TODO 处理请求头
-ab
+* DONE 处理请求头
+  CLOSED: [2016-11-30 Wed 11:21]
+处理请求头的部分，包括分配安全模块儿执行环境、建立事务、处理URL、处理请求头，
+并根据处理结果，依据nginx的特点做相应处理。
+  #+BEGIN_EXAMPLE
+  -ngx_http_modsecurity_rewrite_handler()      ~/src/ngx_http_modsecurity_rewrite.c
+    -ngx_http_modsecurity_create_ctx()         每请求分配执行环境
+      -ngx_http_set_ctx()
+    -msc_process_connection()                  创建事务
+    -ngx_http_modsecurity_process_intervention()
+      -msc_intervention()                      处理返回值(后续省略返回值处理)
+    -msc_process_uri()                         处理URL
+    -msc_add_n_request_header()
+    -msc_process_request_headers()             处理HTTP请求头
+  #+END_EXAMPLE
 
 * TODO 处理请求体
 ab

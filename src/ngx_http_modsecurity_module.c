@@ -81,7 +81,7 @@ ngx_str_to_char(ngx_str_t a, ngx_pool_t *p)
     return str;
 }
 
-
+/* 获取安全模块儿的处理结果，并针对nginx做相应处理，如回应 */
 ngx_inline int
 ngx_http_modsecurity_process_intervention (Transaction *transaction, ngx_http_request_t *r)
 {
@@ -89,17 +89,19 @@ ngx_http_modsecurity_process_intervention (Transaction *transaction, ngx_http_re
     intervention.status = 200;
     intervention.url = NULL;
 
+    /* 获取处理结果 */
     dd("processing intervention");
-
     if (msc_intervention(transaction, &intervention) == 0) {
         dd("nothing to do");
         return 0;
     }
 
+    /* 日志 */
     if (intervention.log == NULL) {
         intervention.log = "(no log message was specified)";
     }
 
+    /* URL有修正？？？ */
     if (intervention.url != NULL)
     {
         dd("intervention -- redirecting to: %s with status code: %d", intervention.url, intervention.status);
@@ -141,6 +143,7 @@ ngx_http_modsecurity_process_intervention (Transaction *transaction, ngx_http_re
         return intervention.status;
     }
 
+    /* 返回值有修正？？？ */
     if (intervention.status != 200)
     {
         if (r->header_sent)
@@ -173,7 +176,7 @@ ngx_http_modsecurity_cleanup(void *data)
 #endif
 }
 
-
+/* 创建本连接对应的安全模块儿信息结构 */
 ngx_inline ngx_http_modsecurity_ctx_t *
 ngx_http_modsecurity_create_ctx(ngx_http_request_t *r)
 {
@@ -182,6 +185,7 @@ ngx_http_modsecurity_create_ctx(ngx_http_request_t *r)
     ngx_http_modsecurity_main_conf_t *cf = NULL;
     ngx_pool_cleanup_t *cln = NULL;
 
+    /* 分配内存 */
     ctx = ngx_pcalloc(r->pool, sizeof(ngx_http_modsecurity_ctx_t));
     if (ctx == NULL)
     {
@@ -191,14 +195,15 @@ ngx_http_modsecurity_create_ctx(ngx_http_request_t *r)
     cf = ngx_http_get_module_main_conf(r, ngx_http_modsecurity_module);
     loc_cf = ngx_http_get_module_loc_conf(r, ngx_http_modsecurity_module);
 
+    /* 创建事物结构 */
     dd("creating transaction with the following rules: '%p' -- ms: '%p'", loc_cf->rules_set, cf->modsec);
-
     ctx->modsec_transaction = msc_new_transaction(cf->modsec, loc_cf->rules_set, r->connection->log);
-
     dd("transaction created");
 
+    /* 保存模块儿执行环境，ngx_http_request_t->ctx[module.ctx_index] */
     ngx_http_set_ctx(r, ctx, ngx_http_modsecurity_module);
 
+    /* 设置清理句柄 */
     cln = ngx_pool_cleanup_add(r->pool, sizeof(ngx_http_modsecurity_ctx_t));
     if (cln == NULL)
     {
@@ -208,6 +213,7 @@ ngx_http_modsecurity_create_ctx(ngx_http_request_t *r)
     cln->handler = ngx_http_modsecurity_cleanup;
     cln->data = ctx;
 
+    /* 设置了sanity检测 */
 #if defined(MODSECURITY_SANITY_CHECKS) && (MODSECURITY_SANITY_CHECKS)
     ctx->sanity_headers_out = ngx_array_create(r->pool, 12, sizeof(ngx_http_modsecurity_header_t));
     if (ctx->sanity_headers_out == NULL) {
@@ -247,7 +253,7 @@ static ngx_command_t ngx_http_modsecurity_commands[] =  {
   {/* 是否开启此模块儿 */
     ngx_string("modsecurity"),           
     NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF|NGX_CONF_FLAG,
-    ngx_conf_set_flag_slot,
+    ngx_conf_set_flag_slot,             /* 此函数接受参数 on/off, 设置对应值为1/0 */
     NGX_HTTP_LOC_CONF_OFFSET,
     offsetof(ngx_http_modsecurity_loc_conf_t, enable),
     NULL
