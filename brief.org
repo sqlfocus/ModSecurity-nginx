@@ -5,9 +5,52 @@
 本系列文档摘录WAF模块儿Modsecurity和知名HTTP代理nginx之间的链接器；以便
 窥探牛人如何关联起这两者，为自己设计或引用此架构铺路！
 
+ModSecurity起初是为APACHE设计的安全模块儿，随着nginx及其他WEB引擎的崛起，
+ModSecurity逐渐转变为统一的平台，提供安全服务接口，可以适配IIS、NGINX等
+目前主流的WEB服务器引擎(对应的名称也改为libmodsecurity(ModSecurity v3)).
 
+* 安装
+安装此模块儿前，请先安装新版本的Modsecurity，libmodsecurity，即v3及更新
+版本；然后，依照编译nginx第三方模块儿的形式，编译安装此模块儿。
+  #+BEGIN_EXAMPLE
+  ./configure --add-module=/path/your/modsecurity-for-nginx
+  #+END_EXAMPLE
 
+* 使用
+此模块儿安装后，nginx的配置指令多了4个，如下：
+  - modsecurity [On|Off]
+      : 开启、关闭此模块儿
+  - modsecurity_rules_file []
+      : 指定ModSecurity的配置文件
+  - modsecurity_rules_remote [server-key] []
+      : 指定ModSecurity配置文件的下载地址
+  - modsecurity_rules []
+      : 添加安全规则
 
+** 示例
+  #+BEGIN_EXAMPLE
+  ...
+  modsecurity on;
 
+  location /conf-from-local {
+    root /var/www/html;
+    modsecurity_rules_file /etc/my_modsecurity_rules.conf;
+  }
+
+  location /conf-from-remote {
+    root /var/www/html;
+    modsecurity_rules_remote my-server-key https://my-own-server/rules/download;
+  }
+
+  location / {
+    modsecurity_rules '
+      SecRuleEngine On
+      SecDebugLog /tmp/modsec_debug.log
+      SecDebugLogLevel 9
+      SecRule ARGS "@contains test" "id:1,phase:2,t:trim,block"
+    ';
+  }
+  ...
+  #+END_EXAMPLE
 
 
