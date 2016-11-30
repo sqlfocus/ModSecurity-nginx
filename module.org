@@ -113,8 +113,13 @@
     -msc_process_request_body()               检测报文体
   #+END_EXAMPLE
 
-* TODO 日志
-ab
+* DONE 日志
+  CLOSED: [2016-11-30 Wed 13:43]
+日志处理比较简单，直接调用modsecurity模块儿的日志处理函数。
+  #+BEGIN_EXAMPLE
+  -ngx_http_modsecurity_log_handler()         ~/src/ngx_http_modsecurity_log.c
+    -msc_process_logging()
+  #+END_EXAMPLE
 
 * TODO 处理回应头
 ab

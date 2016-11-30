@@ -31,7 +31,7 @@ ngx_http_modsecurity_log(void *log, const char* msg)
     ngx_log_error(NGX_LOG_INFO, (ngx_log_t *)log, 0, "%s", msg);
 }
 
-
+/* NGX_HTTP_LOG_PHASE阶段，安全模块儿的处理句柄 */
 ngx_int_t
 ngx_http_modsecurity_log_handler(ngx_http_request_t *r)
 {
@@ -66,7 +66,7 @@ ngx_http_modsecurity_log_handler(ngx_http_request_t *r)
 
     dd("calling msc_process_logging for %p", ctx);
     ngx_http_modsecurity_pcre_malloc_init();
-    msc_process_logging(ctx->modsec_transaction);
+    msc_process_logging(ctx->modsec_transaction);   /* 日志处理入口 */
     ngx_http_modsecurity_pcre_malloc_done();
 
     return NGX_OK;
