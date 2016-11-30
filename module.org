@@ -101,8 +101,17 @@
     -msc_process_request_headers()             处理HTTP请求头
   #+END_EXAMPLE
 
-* TODO 处理请求体
-ab
+* DONE 处理请求体
+  CLOSED: [2016-11-30 Wed 13:38]
+请求报文体的处理，要在报文体接收完毕后；报文可能存储在临时文件或内存
+中，上传后才可做安全处理。
+  #+BEGIN_EXAMPLE
+  -ngx_http_modsecurity_pre_access_handler()  ~/src/ngx_http_modsecurity_pre_access.c
+    -ngx_http_read_client_request_body()      收取请求报文体, 并等待收取完毕
+    -msc_request_body_from_file()             报文体存储在文件中，上传
+    -msc_append_request_body()                报文体存储在内存中，上传
+    -msc_process_request_body()               检测报文体
+  #+END_EXAMPLE
 
 * TODO 日志
 ab

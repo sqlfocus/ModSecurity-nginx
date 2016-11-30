@@ -20,6 +20,7 @@
 
 #include "ngx_http_modsecurity_common.h"
 
+/* 读取请求报文体完毕后的回调函数 */
 void
 ngx_http_modsecurity_request_read(ngx_http_request_t *r)
 {
@@ -33,12 +34,12 @@ ngx_http_modsecurity_request_read(ngx_http_request_t *r)
 
     if (ctx->waiting_more_body)
     {
-        ctx->waiting_more_body = 0;
-        ngx_http_core_run_phases(r);
+        ctx->waiting_more_body = 0;        /* 清除标识 */
+        ngx_http_core_run_phases(r);       /* 继续handler处理 */
     }
 }
 
-
+/* NGX_HTTP_PREACCESS_PHASE阶段的处理句柄，处理请求报文体 */
 ngx_int_t
 ngx_http_modsecurity_pre_access_handler(ngx_http_request_t *r)
 {
@@ -66,16 +67,16 @@ ngx_http_modsecurity_pre_access_handler(ngx_http_request_t *r)
     }
     */
 
+    /* 获取安全模块儿的执行环境，在处理请求头时创建，此处不应该为空 */
     ctx = ngx_http_get_module_ctx(r, ngx_http_modsecurity_module);
-
     dd("recovering ctx: %p", ctx);
-
     if (ctx == NULL)
     {
         dd("ctx is null; Nothing we can do, returning an error.");
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
+    /* 等待更多的报文内容，则继续等待；*/
     if (ctx->waiting_more_body == 1)
     {
         dd("waiting for more data before proceed. / count: %d",
@@ -84,11 +85,12 @@ ngx_http_modsecurity_pre_access_handler(ngx_http_request_t *r)
         return NGX_DONE;
     }
 
+    /* 首次进入，读取报文体 */
     if (ctx->body_requested == 0)
     {
         ngx_int_t rc = NGX_OK;
 
-        ctx->body_requested = 1;
+        ctx->body_requested = 1;                   /* 设置标识，开始处理请求报文体 */
 
         dd("asking for the request body, if any. Count: %d",
             r->main->count);
@@ -104,7 +106,7 @@ ngx_http_modsecurity_pre_access_handler(ngx_http_request_t *r)
         r->request_body_in_persistent_file = 1;
         r->request_body_in_clean_file = 1;
 
-        rc = ngx_http_read_client_request_body(r,
+        rc = ngx_http_read_client_request_body(r,  /* 设置等待报文的处理函数 */
             ngx_http_modsecurity_request_read);
         if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
 #if (nginx_version < 1002006) ||                                             \
@@ -123,6 +125,7 @@ ngx_http_modsecurity_pre_access_handler(ngx_http_request_t *r)
         }
     }
 
+    /* 报文体接收完毕，处理 */
     if (ctx->waiting_more_body == 0)
     {
         int ret = 0;
@@ -140,7 +143,7 @@ ngx_http_modsecurity_pre_access_handler(ngx_http_request_t *r)
          * the chunks to ModSecurity while nginx keep calling this
          * function.
          */
-
+        /* 上传文件形式的报文体 */
         if (r->request_body->temp_file != NULL) {
             ngx_str_t file_path = r->request_body->temp_file->file.name;
             const char *file_name = ngx_str_to_char(file_path, r->pool);
@@ -159,7 +162,7 @@ ngx_http_modsecurity_pre_access_handler(ngx_http_request_t *r)
         } else {
             dd("inspection request body in memory.");
         }
-
+        /* 上传缓存形式的报文体 */
         while (chain && !already_inspected)
         {
             u_char *data = chain->buf->start;
@@ -193,7 +196,7 @@ ngx_http_modsecurity_pre_access_handler(ngx_http_request_t *r)
          */
 
 /* XXX: once more -- is body can be modified ?  content-length need to be adjusted ? */
-
+        /* 报文体完整上传到安全模块儿后，处理报文体 */
         ngx_http_modsecurity_pcre_malloc_init();
         msc_process_request_body(ctx->modsec_transaction);
         ngx_http_modsecurity_pcre_malloc_done();

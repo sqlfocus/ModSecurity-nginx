@@ -50,8 +50,8 @@ typedef struct {
     ngx_array_t *sanity_headers_out;   /**/
 #endif
 
-    unsigned waiting_more_body:1;      /**/
-    unsigned body_requested:1;         /**/
+    unsigned waiting_more_body:1;      /* 0/1, 等待更多的报文内容 */
+    unsigned body_requested:1;         /* 0/1, 开始处理请求报文体 */
     unsigned processed:1;              /**/
 } ngx_http_modsecurity_ctx_t;
 
