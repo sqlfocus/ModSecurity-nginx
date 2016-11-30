@@ -50,9 +50,7 @@ ngx_http_modsecurity_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
     }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_modsecurity_module);
-
     dd("body filter, recovering ctx: %p", ctx);
-
     if (ctx == NULL) {
         return ngx_http_next_body_filter(r, in);
     }
@@ -153,7 +151,7 @@ ngx_http_modsecurity_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
 
             msc_append_response_body(ctx->modsec_transaction, data, chain->buf->end - data);
             ret = ngx_http_modsecurity_process_intervention(ctx->modsec_transaction, r);
-            if (ret > 0) {
+            if (ret > 0) {                           /* 追加报文体 */
                 return ngx_http_filter_finalize_request(r,
                     &ngx_http_modsecurity_module, ret);
             }
@@ -161,7 +159,7 @@ ngx_http_modsecurity_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
 
         ngx_http_modsecurity_pcre_malloc_init();
         msc_process_response_body(ctx->modsec_transaction);
-        ngx_http_modsecurity_pcre_malloc_done();
+        ngx_http_modsecurity_pcre_malloc_done();     /* 报文体过滤 */
 
 /* XXX: I don't get how body from modsec being transferred to nginx's buffer.  If so - after adjusting of nginx's
    XXX: body we can proceed to adjust body size (content-length).  see xslt_body_filter() for example */
@@ -180,5 +178,5 @@ ngx_http_modsecurity_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
     }
 
 /* XXX: xflt_filter() -- return NGX_OK here */
-    return ngx_http_next_body_filter(r, in);
+    return ngx_http_next_body_filter(r, in);         /* 调用其他的报文体过滤器 */
 }

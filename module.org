@@ -129,8 +129,14 @@
     -msc_process_response_headers()         处理
   #+END_EXAMPLE
 
-* TODO 处理回应体
-ab
+* DONE 处理回应体
+  CLOSED: [2016-11-30 Wed 14:07]
+  #+BEGIN_EXAMPLE
+  -ngx_http_modsecurity_body_filter()     ~/src/ngx_http_modsecurity_body_filter.c
+    -msc_append_response_body()
+    -msc_process_response_body()
+    -ngx_http_next_body_filter()          调用其他的报文体过滤器
+  #+END_EXAMPLE
 
 * 参考
   - [[https://github.com/sqlfocus/nginx][nginx代码导读]]
