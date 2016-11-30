@@ -17,7 +17,7 @@ ModSecurity逐渐转变为统一的平台，提供安全服务接口，可以适
   #+END_EXAMPLE
 
 * 使用
-此模块儿安装后，nginx的配置指令多了4个，如下：
+此模块儿安装后，nginx的配置指令多了几个，如下：
   - modsecurity [On|Off]
       : 开启、关闭此模块儿
   - modsecurity_rules_file []

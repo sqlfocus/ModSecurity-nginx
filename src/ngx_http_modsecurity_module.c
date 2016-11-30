@@ -244,15 +244,15 @@ ngx_http_modsecurity_set_remote_server(ngx_conf_t *cf, ngx_command_t *cmd, void 
 
 
 static ngx_command_t ngx_http_modsecurity_commands[] =  {
-  {
-    ngx_string("modsecurity"),
+  {/* 是否开启此模块儿 */
+    ngx_string("modsecurity"),           
     NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF|NGX_CONF_FLAG,
     ngx_conf_set_flag_slot,
     NGX_HTTP_LOC_CONF_OFFSET,
     offsetof(ngx_http_modsecurity_loc_conf_t, enable),
     NULL
   },
-  {
+  {/* 是否开启合法化检测 */
     ngx_string("modsecurity_sanity_checks"),
     NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF|NGX_CONF_FLAG,
     ngx_conf_set_flag_slot,
@@ -260,7 +260,7 @@ static ngx_command_t ngx_http_modsecurity_commands[] =  {
     offsetof(ngx_http_modsecurity_loc_conf_t, sanity_checks_enabled),
     NULL
   },
-  {
+  {/* 指定规则的本地配置文件 */
     ngx_string("modsecurity_rules_file"),
     NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF|NGX_CONF_TAKE1,
     ngx_conf_set_str_slot,
@@ -268,7 +268,7 @@ static ngx_command_t ngx_http_modsecurity_commands[] =  {
     offsetof(ngx_http_modsecurity_loc_conf_t, rules_file),
     NULL
   },
-  {
+  {/* 指定规则的远端配置服务器 */
     ngx_string("modsecurity_rules_remote"),
     NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF|NGX_CONF_TAKE2,
     ngx_http_modsecurity_set_remote_server,
@@ -276,7 +276,7 @@ static ngx_command_t ngx_http_modsecurity_commands[] =  {
     offsetof(ngx_http_modsecurity_loc_conf_t, rules_remote_server),
     NULL
   },
-  {
+  {/* 指定某条规则 */
     ngx_string("modsecurity_rules"),
     NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF|NGX_CONF_TAKE1,
     ngx_conf_set_str_slot,
@@ -302,11 +302,11 @@ static ngx_http_module_t ngx_http_modsecurity_ctx = {
     ngx_http_modsecurity_merge_loc_conf     /* merge location configuration */
 };
 
-
+/* 模块儿定义，入口 */
 ngx_module_t ngx_http_modsecurity_module = {
     NGX_MODULE_V1,
     &ngx_http_modsecurity_ctx,              /* module context */
-    ngx_http_modsecurity_commands,          /* module directives */
+    ngx_http_modsecurity_commands,          /* 此模块儿提供的配置指令 */
     NGX_HTTP_MODULE,                        /* module type */
     NULL, /* init master */
     NULL, /* init module */
@@ -342,7 +342,7 @@ ngx_http_modsecurity_init(ngx_conf_t *cf)
      *
      * TODO: check if we can hook prior to NGX_HTTP_REWRITE_PHASE phase.
      *
-     */
+     *//* 在重写阶段注册回调处理句柄 */
     h_rewrite = ngx_array_push(&cmcf->phases[NGX_HTTP_REWRITE_PHASE].handlers);
     if (h_rewrite == NULL)
     {
@@ -357,7 +357,7 @@ ngx_http_modsecurity_init(ngx_conf_t *cf)
      *
      * TODO: check if hook into separated phases is the best thing to do.
      *
-     */
+     *//* 在ACCESS之前注册处理句柄，以处理报文体 */
     h_preaccess = ngx_array_push(&cmcf->phases[NGX_HTTP_PREACCESS_PHASE].handlers);
     if (h_preaccess == NULL)
     {
@@ -372,7 +372,7 @@ ngx_http_modsecurity_init(ngx_conf_t *cf)
      * TODO: check if the log phase happens like it happens on Apache.
      *       check if last phase will not hold the request.
      *
-     */
+     *//* 在日志阶段注册处理句柄 */
     h_log = ngx_array_push(&cmcf->phases[NGX_HTTP_LOG_PHASE].handlers);
     if (h_log == NULL)
     {
@@ -381,12 +381,13 @@ ngx_http_modsecurity_init(ngx_conf_t *cf)
     }
     *h_log = ngx_http_modsecurity_log_handler;
 
-
+    /* 回应报文的头部处理阶段 */
     rc = ngx_http_modsecurity_header_filter_init();
     if (rc != NGX_OK) {
         return rc;
     }
 
+    /* 回应报文的body处理阶段 */
     rc = ngx_http_modsecurity_body_filter_init();
     if (rc != NGX_OK) {
         return rc;
@@ -395,7 +396,7 @@ ngx_http_modsecurity_init(ngx_conf_t *cf)
     return NGX_OK;
 }
 
-
+/* 模块儿主配置信息，对应ModSecurity实例及全局信息 */
 static void *
 ngx_http_modsecurity_create_main_conf(ngx_conf_t *cf)
 {
@@ -411,7 +412,7 @@ ngx_http_modsecurity_create_main_conf(ngx_conf_t *cf)
         return NGX_CONF_ERROR;
     }
 
-    /* Create our ModSecurity instace */
+    /* 创建安全模块儿实例，Create our ModSecurity instace */
     conf->modsec = msc_init();
     if (conf->modsec == NULL)
     {
@@ -425,6 +426,7 @@ ngx_http_modsecurity_create_main_conf(ngx_conf_t *cf)
     msc_set_connector_info(conf->modsec, "ModSecurity-nginx v0.1.1-beta");
     msc_set_log_cb(conf->modsec, ngx_http_modsecurity_log);
 
+    /* 创建清理句柄 */
     cln = ngx_pool_cleanup_add(cf->pool, 0);
     if (cln == NULL)
     {
@@ -438,7 +440,7 @@ ngx_http_modsecurity_create_main_conf(ngx_conf_t *cf)
     return conf;
 }
 
-
+/* 创建location配置结构，对应具体的location内置规则等 */
 static void *
 ngx_http_modsecurity_create_loc_conf(ngx_conf_t *cf)
 {
@@ -484,7 +486,7 @@ ngx_http_modsecurity_create_loc_conf(ngx_conf_t *cf)
     return conf;
 }
 
-
+/* 合并全局的配置信息或默认值到特定locaiton */
 static char *
 ngx_http_modsecurity_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 {
@@ -512,7 +514,7 @@ ngx_http_modsecurity_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
      * We are not respecting the order of the rules inclusion,
      * we should; It is not hard to do. Maybe for further
      * versions.
-     */
+     *//* 导引入远端配置服务器的规则 */
     if (c->rules_remote_server.len > 0)
     {
         int res;
@@ -535,6 +537,7 @@ ngx_http_modsecurity_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
         }
         dd("Loaded '%d' rules.", res);
     }
+    /* 导引入本地配置文件的规则 */
     if (c->rules_file.len > 0)
     {
         int res;
@@ -553,6 +556,8 @@ ngx_http_modsecurity_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
         }
         dd("Loaded '%d' rules.", res);
     }
+    
+    /* 规则添加到安全引擎 */
     if (c->rules.len > 0)
     {
         int res;
