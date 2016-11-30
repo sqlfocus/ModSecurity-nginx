@@ -121,8 +121,13 @@
     -msc_process_logging()
   #+END_EXAMPLE
 
-* TODO 处理回应头
-ab
+* DONE 处理回应头
+  CLOSED: [2016-11-30 Wed 14:00]
+  #+BEGIN_EXAMPLE
+  -ngx_http_modsecurity_header_filter()     ~/src/ngx_http_modsecurity_header_filter.c
+    -msc_add_n_response_header()            上传响应同步
+    -msc_process_response_headers()         处理
+  #+END_EXAMPLE
 
 * TODO 处理回应体
 ab

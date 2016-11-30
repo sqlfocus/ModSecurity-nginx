@@ -52,7 +52,7 @@ typedef struct {
 
     unsigned waiting_more_body:1;      /* 0/1, 等待更多的报文内容 */
     unsigned body_requested:1;         /* 0/1, 开始处理请求报文体 */
-    unsigned processed:1;              /**/
+    unsigned processed:1;              /* 0/1, 是否已经处理过回应报文头 */
 } ngx_http_modsecurity_ctx_t;
 
 /* 安全模块儿某location的配置 */

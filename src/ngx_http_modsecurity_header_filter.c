@@ -420,9 +420,7 @@ ngx_http_modsecurity_header_filter(ngx_http_request_t *r)
 /* XXX: if NOT_MODIFIED, do we need to process it at all?  see xslt_header_filter() */
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_modsecurity_module);
-
     dd("header filter, recovering ctx: %p", ctx);
-
     if (ctx == NULL)
     {
         dd("something really bad happened or ModSecurity is disabled. going to the next filter.");
@@ -432,7 +430,7 @@ ngx_http_modsecurity_header_filter(ngx_http_request_t *r)
 /* XXX: can it happen ?  already processed i mean */
 /* XXX: check behaviour on 'ModSecurity off' */
 
-    if (ctx && ctx->processed)
+    if (ctx && ctx->processed)               /* 检查是否已经处理过 */
     {
         /*
          * FIXME: verify if this request is already processed.
@@ -448,7 +446,7 @@ ngx_http_modsecurity_header_filter(ngx_http_request_t *r)
      */
     r->filter_need_in_memory = 1;
 
-    ctx->processed = 1;
+    ctx->processed = 1;                      /* 设置标识，已经处理过回应报文头 */
     /*
      *
      * Assuming ModSecurity module is running immediately before the
@@ -461,7 +459,7 @@ ngx_http_modsecurity_header_filter(ngx_http_request_t *r)
      * and later we look into the ngx_list_part_t. The ngx_list_part_t must be
      * checked. Other module(s) in the chain may added some content to it.
      *
-     */
+     *//* 上传提前设定的回应头部 */
     for (i = 0; ngx_http_modsecurity_headers_out[i].name.len; i++)
     {
         dd(" Sending header to ModSecurity - header: `%.*s'.",
@@ -492,7 +490,7 @@ ngx_http_modsecurity_header_filter(ngx_http_request_t *r)
 
         /*
          * Doing this ugly cast here, explanation on the request_header
-         */
+         *//* 上传到安全模块儿 */
         msc_add_n_response_header(ctx->modsec_transaction,
             (const unsigned char *) data[i].key.data,
             data[i].key.len,
@@ -518,7 +516,7 @@ ngx_http_modsecurity_header_filter(ngx_http_request_t *r)
     }
 #endif
 
-    ngx_http_modsecurity_pcre_malloc_init();
+    ngx_http_modsecurity_pcre_malloc_init(); /* 处理回应报文头 */
     msc_process_response_headers(ctx->modsec_transaction, status, http_response_ver);
     ngx_http_modsecurity_pcre_malloc_done();
     ret = ngx_http_modsecurity_process_intervention(ctx->modsec_transaction, r);
@@ -546,5 +544,5 @@ ngx_http_modsecurity_header_filter(ngx_http_request_t *r)
      */
      //r->headers_out.content_length_n = -1;
 
-    return ngx_http_next_header_filter(r);
+    return ngx_http_next_header_filter(r);   /* 调用下一个报文头过滤函数 */
 }
